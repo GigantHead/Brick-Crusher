@@ -7,12 +7,13 @@ from .brick import Brick
 class Game:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
+        self.screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT), pygame.SRCALPHA)
         self.clock = pygame.time.Clock()
         self.running = True
         self.paddle = Paddle()
         self.ball = Ball()
         self.active = False
+        self.game_over = False
         self.font = pygame.font.Font(None, 36)
         #self.brick = [Brick(x, y) for x in range(100, 700, 100) for y in range(50, 150, 50)]
         
@@ -21,29 +22,40 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT    :
                     self.running = False
-
-            # handle key presses for movement
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_LEFT] and self.active:
-                self.paddle.move(-1)
-            if keys[pygame.K_RIGHT] and self.active:
-                self.paddle.move(1)
-            if keys[pygame.K_SPACE]:
-                self.active = True
-                            
-            if not self.active:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        self.running = False
+                    if event.key == pygame.K_SPACE:
+                        self.active = True
+            
+            # clear the screen at the start of each frame
+            self.screen.fill(settings.BLACK)
+                    
+            # splash screen before game start and after game over
+            if not self.active and not self.game_over:
                 self.draw_splash_screen("Press Space to Begin")
+            elif self.game_over:
+                self.draw_splash_screen("Game Over! Press Space to Retry")
+                
             else:
+                # handle key presses for movement
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_LEFT]:
+                    self.paddle.move(-1)
+                if keys[pygame.K_RIGHT]:
+                    self.paddle.move(1)
+                            
                 self.update()
                 self.draw()
-                pygame.display.update()
-                self.clock.tick(settings.FPS)
+                
+            pygame.display.update()
+            self.clock.tick(settings.FPS)
         pygame.quit()
     
     # draw splash screen for game start or game over    
     def draw_splash_screen(self, message):
         overlay = pygame.Surface((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
-        #overlay.set_alpha(128)  # adjust transparency: 0 is fully transparent, 255 is opaque
+        overlay.set_alpha(128)  # adjust transparency: 0 is fully transparent, 255 is opaque
         overlay.fill(settings.GRAY)
         self.screen.blit(overlay, (0, 0))
         
