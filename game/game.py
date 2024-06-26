@@ -18,7 +18,7 @@ class Game:
         self.ball = Ball()
         self.last_brick_time = pygame.time.get_ticks()
         self.bricks = []
-        self.brick_frequency = 3000
+        self.brick_frequency = 4000
         self.brick_spawn_probability = settings.INITIAL_BRICK_SPAWN_PROBABILITY
         
         # variables for start and end of game splash screen
