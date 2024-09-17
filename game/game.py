@@ -1,5 +1,6 @@
 import pygame
 import random
+import pytweening
 import settings
 from .paddle import Paddle
 from .ball import Ball
@@ -8,116 +9,122 @@ from .brick import Brick
 class Game:
     def __init__(self):
         pygame.init()
-        # display variables
-        self.screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT), pygame.SRCALPHA)
-        
-        # gameplay variables
+        self.screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
         self.clock = pygame.time.Clock()
-        self.running = True
+        self.font = pygame.font.Font(None, 36)  # Default font, size 36
+        self.reset_game()
+        self.game_state = "SPLASH"  # Initial game state
+
+    def reset_game(self):
         self.paddle = Paddle()
         self.ball = Ball()
+        self.bricks = pygame.sprite.Group()
         self.last_brick_time = pygame.time.get_ticks()
-        self.bricks = []
-        self.brick_frequency = 4000
-        self.brick_spawn_probability = settings.INITIAL_BRICK_SPAWN_PROBABILITY
-        
-        # variables for start and end of game splash screen
-        self.active = False
+        vertical_gap = settings.BRICK_HEIGHT * 2
+        self.brick_frequency = (vertical_gap / settings.BRICK_SPEED) * 1000
         self.game_over = False
-        self.font = pygame.font.Font(None, 36)
-        
-        
-    def run(self):
-        while self.running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.running = False
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        self.running = False
-                    if event.key == pygame.K_SPACE:
-                        if self.game_over:
-                            self.reset_game()
-                        else:
-                            self.active = True
-            
-            # clear the screen at the start of each frame
-            self.screen.fill(settings.BLACK)
-                    
-            # splash screen before game start and after game over
-            if not self.active and not self.game_over:
-                self.draw_splash_screen("Press Space to Begin")
-            elif self.game_over:
-                self.draw_splash_screen("Game Over! Press Space to Retry")
-                
-            else:
-                self.handle_keys()
-                self.update()
-                self.draw()
+        self.active = True
 
-            pygame.display.update()
-            self.clock.tick(settings.FPS)
-        pygame.quit()
-    
-    # draw splash screen for game start or game over    
-    def draw_splash_screen(self, message):
-        overlay = pygame.Surface((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
-        overlay.set_alpha(settings.SPLASH_SCREEN_TRANSPARENCY)  # adjust transparency: 0 is fully transparent, 255 is opaque
-        overlay.fill(settings.GRAY)
-        self.screen.blit(overlay, (0, 0))
+    def add_brick_row(self):
+        for i in range(settings.SCREEN_WIDTH // settings.BRICK_WIDTH):
+            brick = Brick(i * settings.BRICK_WIDTH, 0)
+            self.bricks.add(brick)
+
+    def update(self, dt):
+        if self.game_state != "PLAYING":
+            return
+
+        self.paddle.update()
+        self.ball.update()
+        self.ball.check_collision_with_paddle(self.paddle)
         
-        # render text
-        text = self.font.render(message, True, settings.WHITE)
-        text_rect = text.get_rect(center=(settings.SCREEN_WIDTH / 2, settings.SCREEN_HEIGHT / 2))
-        self.screen.blit(text, text_rect)
-        
-    def update(self):
+        # Check collisions with bricks
+        collided_bricks = self.ball.check_collision_with_bricks(self.bricks)
+        for brick in collided_bricks:
+            self.bricks.remove(brick)
+
         current_time = pygame.time.get_ticks()
         if current_time - self.last_brick_time > self.brick_frequency:
             self.add_brick_row()
-            if self.brick_spawn_probability <= 1 - settings.BRICK_PROBABILITY_INCREMENT:
-                self.brick_spawn_probability += settings.BRICK_PROBABILITY_INCREMENT
-            else: self.brick_spawn_probability = 1
             self.last_brick_time = current_time
 
-        
-        for brick in self.bricks:
-            brick.update()
-            if brick.rect.bottom >= self.paddle.rect.top:
-                self.game_over = True
-                self.active = False 
-    
-    def add_brick_row(self):
-        row = []
-        min_bricks = 1 # ensure minimum of one brick per row
-        for i in range(settings.SCREEN_WIDTH // settings.BRICK_WIDTH):
-            if random.random() < self.brick_spawn_probability or min_bricks > 0:
-                brick = Brick(i * settings.BRICK_WIDTH, 0)
-                row.append(brick)
-                min_bricks -= 1
-        self.bricks.extend(row)
+        self.bricks.update(dt)
 
-    def reset_game(self):
-        self.active = True
-        self.game_over = False
-        self.bricks = []
-        self.paddle = Paddle()
-        self.ball = Ball()
-        self.last_brick_time = pygame.time.get_ticks()
-        self.brick_frequency = 3000
-        self.brick_spawn_probability = settings.INITIAL_BRICK_SPAWN_PROBABILITY
+        # Check for game over condition (bricks reaching paddle level)
+        for brick in self.bricks:
+            if brick.rect.bottom >= self.paddle.rect.top:
+                self.game_state = "GAME_OVER"
+                break
+
+        # Remove bricks that have fallen off the screen
+        for brick in self.bricks:
+            if brick.rect.top >= settings.SCREEN_HEIGHT:
+                self.bricks.remove(brick)
 
     def draw(self):
-        self.screen.fill(settings.BLACK)
-        self.paddle.draw(self.screen)
-        self.ball.draw(self.screen)
-        for brick in self.bricks:
-            if brick.active_brick:
-                self.screen.blit(brick.image, brick.rect)
+        if self.game_state == "SPLASH":
+            self.draw_splash_screen()
+        elif self.game_state == "PLAYING":
+            self.screen.fill(settings.BLACK)
+            self.paddle.draw(self.screen)
+            self.ball.draw(self.screen)
+            self.bricks.draw(self.screen)
+            pygame.display.flip()
+        elif self.game_state == "GAME_OVER":
+            self.draw_game_over_screen()
 
-    def handle_keys(self):
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
-            self.paddle.move(-1)
-        if keys[pygame.K_RIGHT]:
-            self.paddle.move(1)        
+    def run(self):
+        while self.active:
+            dt = self.clock.tick(60) / 1000.0
+
+            self.active = self.handle_events()
+
+            if self.game_state == "PLAYING":
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_LEFT]:
+                    self.paddle.move(-1)
+                if keys[pygame.K_RIGHT]:
+                    self.paddle.move(1)
+
+                self.update(dt)
+
+            self.draw()
+
+        pygame.quit()
+
+    # draw splash screen for game start or game over    
+    def draw_splash_screen(self):
+        self.screen.fill(settings.BLACK)
+        title = self.font.render("Breakout", True, settings.WHITE)
+        start_text = self.font.render("Press any key to start", True, settings.WHITE)
+        
+        title_rect = title.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 3))
+        start_rect = start_text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT * 2 // 3))
+        
+        self.screen.blit(title, title_rect)
+        self.screen.blit(start_text, start_rect)
+        pygame.display.flip()
+
+    def draw_game_over_screen(self):
+        self.screen.fill(settings.BLACK)
+        game_over_text = self.font.render("Game Over!", True, settings.WHITE)
+        restart_text = self.font.render("Press any key to restart", True, settings.WHITE)
+        
+        game_over_rect = game_over_text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 3))
+        restart_rect = restart_text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT * 2 // 3))
+        
+        self.screen.blit(game_over_text, game_over_rect)
+        self.screen.blit(restart_text, restart_rect)
+        pygame.display.flip()
+
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return False
+            if event.type == pygame.KEYDOWN:
+                if self.game_state == "SPLASH":
+                    self.game_state = "PLAYING"
+                elif self.game_state == "GAME_OVER":
+                    self.reset_game()
+                    self.game_state = "PLAYING"
+        return True
