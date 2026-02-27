@@ -12,6 +12,7 @@ class Ball:
         self.angle = 0
         self.velocity_x = self.speed * math.sin(self.angle)
         self.velocity_y = -self.speed * math.cos(self.angle)
+        self.history = []
 
     def move(self):
         self.rect.x += self.velocity_x
@@ -96,6 +97,11 @@ class Ball:
         self.rect.x += self.velocity_x
         self.rect.y += self.velocity_y
         
+        # Update history for trail
+        self.history.append(self.rect.center)
+        if len(self.history) > 10:
+            self.history.pop(0)
+
         # Bounce off side walls
         if self.rect.left <= 0 or self.rect.right >= settings.SCREEN_WIDTH:
             self.velocity_x *= -1
@@ -108,6 +114,13 @@ class Ball:
         self.rect.clamp_ip(pygame.Rect(0, 0, settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
 
     def draw(self, screen):
+        # Draw trail
+        for i, pos in enumerate(self.history):
+             alpha = int((i / len(self.history)) * 255)
+             trail_surface = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+             pygame.draw.circle(trail_surface, (*settings.WHITE, alpha), (self.rect.width//2, self.rect.height//2), self.rect.width//2)
+             screen.blit(trail_surface, (pos[0] - self.rect.width//2, pos[1] - self.rect.height//2))
+
         screen.blit(self.image, self.rect)
         
     def handle_brick_collision(self, brick):
