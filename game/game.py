@@ -1,6 +1,5 @@
 import pygame
 import random
-import pytweening
 import settings
 from .paddle import Paddle
 from .ball import Ball
