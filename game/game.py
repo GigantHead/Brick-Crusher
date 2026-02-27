@@ -101,7 +101,12 @@ class Game:
         title_rect = title.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 3))
         start_rect = start_text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT * 2 // 3))
         
+        # Add controls hint
+        hint_text = self.font.render("Use arrow keys to move", True, settings.GRAY)
+        hint_rect = hint_text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 2))
+
         self.screen.blit(title, title_rect)
+        self.screen.blit(hint_text, hint_rect)
         self.screen.blit(start_text, start_rect)
         pygame.display.flip()
 
