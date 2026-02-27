@@ -94,27 +94,21 @@ class Game:
 
     # draw splash screen for game start or game over    
     def draw_splash_screen(self):
-        self.screen.fill(settings.BLACK)
-        title = self.font.render("Breakout", True, settings.WHITE)
-        start_text = self.font.render("Press any key to start", True, settings.WHITE)
-        
-        title_rect = title.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 3))
-        start_rect = start_text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT * 2 // 3))
-        
-        self.screen.blit(title, title_rect)
-        self.screen.blit(start_text, start_rect)
-        pygame.display.flip()
+        self.draw_message_screen("Breakout", "Press any key to start")
 
     def draw_game_over_screen(self):
+        self.draw_message_screen("Game Over!", "Press any key to restart")
+
+    def draw_message_screen(self, title_message, subtitle_message):
         self.screen.fill(settings.BLACK)
-        game_over_text = self.font.render("Game Over!", True, settings.WHITE)
-        restart_text = self.font.render("Press any key to restart", True, settings.WHITE)
+        title = self.font.render(title_message, True, settings.WHITE)
+        subtitle = self.font.render(subtitle_message, True, settings.WHITE)
         
-        game_over_rect = game_over_text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 3))
-        restart_rect = restart_text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT * 2 // 3))
+        title_rect = title.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 3))
+        subtitle_rect = subtitle.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT * 2 // 3))
         
-        self.screen.blit(game_over_text, game_over_rect)
-        self.screen.blit(restart_text, restart_rect)
+        self.screen.blit(title, title_rect)
+        self.screen.blit(subtitle, subtitle_rect)
         pygame.display.flip()
 
     def handle_events(self):
