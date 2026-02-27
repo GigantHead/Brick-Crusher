@@ -55,10 +55,10 @@ class Ball:
 
         # Check each side of the brick
         sides = [
-            (pygame.math.Vector2(brick.rect.topleft), pygame.math.Vector2(brick.rect.bottomleft)),
-            (pygame.math.Vector2(brick.rect.topleft), pygame.math.Vector2(brick.rect.topright)),
-            (pygame.math.Vector2(brick.rect.topright), pygame.math.Vector2(brick.rect.bottomright)),
-            (pygame.math.Vector2(brick.rect.bottomleft), pygame.math.Vector2(brick.rect.bottomright))
+            (brick.rect.topleft, brick.rect.bottomleft),
+            (brick.rect.topleft, brick.rect.topright),
+            (brick.rect.topright, brick.rect.bottomright),
+            (brick.rect.bottomleft, brick.rect.bottomright)
         ]
 
         closest_point = None
