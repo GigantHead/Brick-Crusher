@@ -34,7 +34,8 @@ class Ball:
             return []
 
         # Find the nearest brick
-        nearest_brick = min(collided_bricks, key=lambda b: pygame.math.Vector2(b.rect.center).distance_to(self.rect.center))
+        ball_center_x, ball_center_y = self.rect.center
+        nearest_brick = min(collided_bricks, key=lambda b: (b.rect.centerx - ball_center_x)**2 + (b.rect.centery - ball_center_y)**2)
         
         # Calculate collision point
         collision_point = self.get_collision_point(nearest_brick)
