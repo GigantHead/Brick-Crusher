@@ -12,8 +12,17 @@ class Game:
         self.screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 36)  # Default font, size 36
+        self.init_ui_elements()
         self.reset_game()
         self.game_state = "SPLASH"  # Initial game state
+
+    def init_ui_elements(self):
+        # Splash screen elements
+        self.splash_title_surf = self.font.render("Breakout", True, settings.WHITE)
+        self.splash_title_rect = self.splash_title_surf.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 3))
+
+        self.splash_start_surf = self.font.render("Press any key to start", True, settings.WHITE)
+        self.splash_start_rect = self.splash_start_surf.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT * 2 // 3))
 
     def reset_game(self):
         self.paddle = Paddle()
@@ -95,14 +104,9 @@ class Game:
     # draw splash screen for game start or game over    
     def draw_splash_screen(self):
         self.screen.fill(settings.BLACK)
-        title = self.font.render("Breakout", True, settings.WHITE)
-        start_text = self.font.render("Press any key to start", True, settings.WHITE)
         
-        title_rect = title.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 3))
-        start_rect = start_text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT * 2 // 3))
-        
-        self.screen.blit(title, title_rect)
-        self.screen.blit(start_text, start_rect)
+        self.screen.blit(self.splash_title_surf, self.splash_title_rect)
+        self.screen.blit(self.splash_start_surf, self.splash_start_rect)
         pygame.display.flip()
 
     def draw_game_over_screen(self):
