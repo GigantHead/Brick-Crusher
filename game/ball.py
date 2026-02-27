@@ -109,10 +109,3 @@ class Ball:
 
     def draw(self, screen):
         screen.blit(self.image, self.rect)
-        
-    def handle_brick_collision(self, brick):
-        # Determine collision side
-        if self.rect.right <= brick.rect.left or self.rect.left >= brick.rect.right:
-            self.velocity_x *= -1
-        else:
-            self.velocity_y *= -1
