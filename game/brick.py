@@ -13,8 +13,3 @@ class Brick(pygame.sprite.Sprite):
     def update(self, dt):
         self.real_y += settings.BRICK_SPEED * dt
         self.rect.y = int(self.real_y)
-
-    def draw(self, screen):
-        if self.active_brick:
-            screen.blit(self.image, self.rect)
-
