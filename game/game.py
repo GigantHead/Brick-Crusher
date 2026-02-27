@@ -12,6 +12,14 @@ class Game:
         self.screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 36)  # Default font, size 36
+
+        # Pre-render Game Over screen text
+        self.game_over_text_surf = self.font.render("Game Over!", True, settings.WHITE)
+        self.game_over_rect = self.game_over_text_surf.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 3))
+
+        self.restart_text_surf = self.font.render("Press any key to restart", True, settings.WHITE)
+        self.restart_rect = self.restart_text_surf.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT * 2 // 3))
+
         self.reset_game()
         self.game_state = "SPLASH"  # Initial game state
 
@@ -107,14 +115,9 @@ class Game:
 
     def draw_game_over_screen(self):
         self.screen.fill(settings.BLACK)
-        game_over_text = self.font.render("Game Over!", True, settings.WHITE)
-        restart_text = self.font.render("Press any key to restart", True, settings.WHITE)
         
-        game_over_rect = game_over_text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 3))
-        restart_rect = restart_text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT * 2 // 3))
-        
-        self.screen.blit(game_over_text, game_over_rect)
-        self.screen.blit(restart_text, restart_rect)
+        self.screen.blit(self.game_over_text_surf, self.game_over_rect)
+        self.screen.blit(self.restart_text_surf, self.restart_rect)
         pygame.display.flip()
 
     def handle_events(self):
