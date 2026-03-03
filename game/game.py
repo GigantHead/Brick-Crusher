@@ -96,12 +96,15 @@ class Game:
     def draw_splash_screen(self):
         self.screen.fill(settings.BLACK)
         title = self.font.render("Breakout", True, settings.WHITE)
+        controls_text = self.font.render("Use LEFT and RIGHT arrows to move", True, settings.GRAY)
         start_text = self.font.render("Press any key to start", True, settings.WHITE)
         
         title_rect = title.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 3))
+        controls_rect = controls_text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 2))
         start_rect = start_text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT * 2 // 3))
         
         self.screen.blit(title, title_rect)
+        self.screen.blit(controls_text, controls_rect)
         self.screen.blit(start_text, start_rect)
         pygame.display.flip()
 
