@@ -163,6 +163,9 @@ class Game:
         pygame.display.flip()
 
     def draw_game_over_screen(self):
+        self.draw_message_screen("Game Over!", "Press any key to restart")
+
+    def draw_message_screen(self, title_message, subtitle_message):
         self.screen.fill(settings.BLACK)
         game_over_text = self.font.render("Game Over!", True, settings.NEON_PINK)
         score_text = self.font.render(f"Final Score: {self.score}", True, settings.WHITE)
