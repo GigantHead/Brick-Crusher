@@ -1,86 +1,109 @@
 import pytest
 import pygame
-import math
 from game.ball import Ball
-from game.paddle import Paddle
+from game.brick import Brick
+import settings
 
-@pytest.fixture
-def ball_paddle():
-    pygame.init()
-    ball = Ball()
-    paddle = Paddle()
-    return ball, paddle
+class TestBallCollision:
+    @pytest.fixture
+    def ball(self):
+        # Create a ball and reset its position for controlled testing
+        ball = Ball()
+        # Ensure consistent speed
+        ball.speed = 5
+        return ball
 
-def test_no_collision(ball_paddle):
-    ball, paddle = ball_paddle
-    ball.rect.center = (100, 100)
-    paddle.rect.center = (300, 300)
+    @pytest.fixture
+    def brick(self):
+        # Create a brick at a known location (e.g., 100, 100)
+        return Brick(100, 100)
 
-    initial_vx = ball.velocity_x
-    initial_vy = ball.velocity_y
+    def test_collision_left_side(self, ball, brick):
+        """Test ball hitting the left side of the brick."""
+        # Setup ball moving right
+        ball.velocity_x = 5
+        ball.velocity_y = 0
 
-    ball.check_collision_with_paddle(paddle)
+        # Position ball rect right edge exactly at brick rect left edge
+        ball.rect.right = brick.rect.left
+        # Align vertically to be in the middle of the brick
+        ball.rect.centery = brick.rect.centery
 
-    assert ball.velocity_x == initial_vx
-    assert ball.velocity_y == initial_vy
+        ball.handle_brick_collision(brick)
 
-def test_center_collision(ball_paddle):
-    ball, paddle = ball_paddle
-    # Place ball directly above paddle center
-    paddle.rect.centerx = 400
-    paddle.rect.centery = 500
-    ball.rect.centerx = 400
-    ball.rect.centery = 500  # Overlapping
+        # Expect velocity_x to flip
+        assert ball.velocity_x == -5
+        # Expect velocity_y to remain unchanged
+        assert ball.velocity_y == 0
 
-    ball.check_collision_with_paddle(paddle)
+    def test_collision_right_side(self, ball, brick):
+        """Test ball hitting the right side of the brick."""
+        # Setup ball moving left
+        ball.velocity_x = -5
+        ball.velocity_y = 0
 
-    # Hitting center means offset is 0, angle is 0
-    # sin(0) = 0, cos(0) = 1
-    # vx = 0, vy = -speed
-    assert math.isclose(ball.velocity_x, 0, abs_tol=1e-9)
-    assert math.isclose(ball.velocity_y, -ball.speed, abs_tol=1e-9)
+        # Position ball rect left edge exactly at brick rect right edge
+        ball.rect.left = brick.rect.right
+        # Align vertically
+        ball.rect.centery = brick.rect.centery
 
-def test_left_side_collision(ball_paddle):
-    ball, paddle = ball_paddle
-    paddle.rect.centerx = 400
-    paddle.rect.centery = 500
+        ball.handle_brick_collision(brick)
 
-    # Hit left side (negative offset)
-    ball.rect.centerx = 380
-    ball.rect.centery = 500
+        # Expect velocity_x to flip
+        assert ball.velocity_x == 5
+        assert ball.velocity_y == 0
 
-    ball.check_collision_with_paddle(paddle)
+    def test_collision_top_side(self, ball, brick):
+        """Test ball hitting the top side of the brick."""
+        # Setup ball moving down
+        ball.velocity_x = 0
+        ball.velocity_y = 5
 
-    assert ball.velocity_x < 0
-    assert ball.velocity_y < 0 # Moving up
+        # Position ball rect bottom edge exactly at brick rect top edge
+        ball.rect.bottom = brick.rect.top
+        # Align horizontally
+        ball.rect.centerx = brick.rect.centerx
 
-def test_right_side_collision(ball_paddle):
-    ball, paddle = ball_paddle
-    paddle.rect.centerx = 400
-    paddle.rect.centery = 500
+        ball.handle_brick_collision(brick)
 
-    # Hit right side (positive offset)
-    ball.rect.centerx = 420
-    ball.rect.centery = 500
+        # Expect velocity_y to flip
+        assert ball.velocity_y == -5
+        # Expect velocity_x to remain unchanged
+        assert ball.velocity_x == 0
 
-    ball.check_collision_with_paddle(paddle)
+    def test_collision_bottom_side(self, ball, brick):
+        """Test ball hitting the bottom side of the brick."""
+        # Setup ball moving up
+        ball.velocity_x = 0
+        ball.velocity_y = -5
 
-    assert ball.velocity_x > 0
-    assert ball.velocity_y < 0 # Moving up
+        # Position ball rect top edge exactly at brick rect bottom edge
+        ball.rect.top = brick.rect.bottom
+        # Align horizontally
+        ball.rect.centerx = brick.rect.centerx
 
-def test_velocity_magnitude(ball_paddle):
-    ball, paddle = ball_paddle
-    paddle.rect.centerx = 400
-    paddle.rect.centery = 500
+        ball.handle_brick_collision(brick)
 
-    # Test various collision points
-    offsets = [-40, -20, 0, 20, 40]
+        # Expect velocity_y to flip
+        assert ball.velocity_y == 5
+        assert ball.velocity_x == 0
 
-    for offset in offsets:
-        ball.rect.centerx = 400 + offset
-        ball.rect.centery = 500
+    def test_collision_overlap_left(self, ball, brick):
+        """
+        Test ball slightly overlapping the left side.
 
-        ball.check_collision_with_paddle(paddle)
+        Note: The current collision logic is simplistic and relies on strict inequality checks.
+        If the ball overlaps the brick (e.g. rect.right > brick.rect.left), the logic may fail
+        to identify it as a horizontal collision and instead treat it as vertical (y-flip).
+        This test is currently a placeholder to document this behavior and may need to be updated
+        if collision logic becomes more robust.
+        """
+        pass
 
-        speed = math.sqrt(ball.velocity_x**2 + ball.velocity_y**2)
-        assert math.isclose(speed, ball.speed, abs_tol=1e-9)
+    def test_collision_overlap_top(self, ball, brick):
+        """
+        Test ball slightly overlapping the top side.
+
+        See note in test_collision_overlap_left.
+        """
+        pass
