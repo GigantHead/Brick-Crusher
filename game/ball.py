@@ -123,10 +123,3 @@ class Ball:
              screen.blit(trail_surface, (pos[0] - self.rect.width//2, pos[1] - self.rect.height//2))
 
         screen.blit(self.image, self.rect)
-        
-    def handle_brick_collision(self, brick):
-        # Determine collision side
-        if self.rect.right <= brick.rect.left or self.rect.left >= brick.rect.right:
-            self.velocity_x *= -1
-        else:
-            self.velocity_y *= -1
