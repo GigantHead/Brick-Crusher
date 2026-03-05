@@ -1,4 +1,5 @@
 import SpriteKit
+import UIKit
 
 final class GameScene: SKScene, SKPhysicsContactDelegate {
     private enum GameState {
@@ -28,6 +29,10 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let brickSpeed: CGFloat = 120
     private let ballSpeed: CGFloat = 320
 
+    // Score
+    private var score = 0
+    private let scoreLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+
     private let splashTitle = SKLabelNode(fontNamed: "AvenirNext-Bold")
     private let splashPrompt = SKLabelNode(fontNamed: "AvenirNext-Medium")
     private let gameOverTitle = SKLabelNode(fontNamed: "AvenirNext-Bold")
@@ -41,6 +46,9 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         TimeInterval((brickHeight * 2) / brickSpeed)
     }
 
+    // Impact Generator for Haptics
+    private let impactGenerator = UIImpactFeedbackGenerator(style: .medium)
+
     override func didMove(to view: SKView) {
         backgroundColor = .black
         physicsWorld.contactDelegate = self
@@ -51,6 +59,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         setupBall()
         setupLabels()
         layoutForCurrentSize()
+
+        impactGenerator.prepare()
 
         setState(.splash)
     }
@@ -83,12 +93,33 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.physicsBody?.collisionBitMask = PhysicsCategory.edge | PhysicsCategory.paddle | PhysicsCategory.brick
         ball.physicsBody?.contactTestBitMask = PhysicsCategory.paddle | PhysicsCategory.brick
         addChild(ball)
+
+        // Add trail
+        if let trail = SKEmitterNode(fileNamed: "BallTrail") {
+            trail.targetNode = self
+            ball.addChild(trail)
+        } else {
+             // Fallback programmatic trail if file not found
+             let trail = SKEmitterNode()
+             trail.particleTexture = nil // Use square particles (default when nil) instead of missing image
+             trail.particleSize = CGSize(width: 4, height: 4)
+             trail.particleBirthRate = 20
+             trail.particleLifetime = 0.5
+             trail.particlePositionRange = CGVector(dx: 5, dy: 5)
+             trail.particleColor = .white
+             trail.particleAlpha = 0.5
+             trail.particleAlphaSpeed = -1.0
+             trail.particleScale = 0.8
+             trail.particleScaleSpeed = -0.4
+             trail.targetNode = self
+             ball.addChild(trail)
+        }
     }
 
     private func setupLabels() {
         splashTitle.text = "Brick Crusher"
         splashTitle.fontSize = 44
-        splashTitle.fontColor = .white
+        splashTitle.fontColor = .cyan
 
         splashPrompt.text = "Tap to start"
         splashPrompt.fontSize = 20
@@ -96,16 +127,22 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
         gameOverTitle.text = "Game Over"
         gameOverTitle.fontSize = 44
-        gameOverTitle.fontColor = .white
+        gameOverTitle.fontColor = .magenta
 
         gameOverPrompt.text = "Tap to restart"
         gameOverPrompt.fontSize = 20
         gameOverPrompt.fontColor = .white
 
+        scoreLabel.fontSize = 24
+        scoreLabel.fontColor = .white
+        scoreLabel.horizontalAlignmentMode = .left
+        scoreLabel.text = "Score: 0"
+
         addChild(splashTitle)
         addChild(splashPrompt)
         addChild(gameOverTitle)
         addChild(gameOverPrompt)
+        addChild(scoreLabel)
     }
 
     private func layoutForCurrentSize() {
@@ -121,6 +158,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         splashPrompt.position = CGPoint(x: size.width / 2, y: size.height * 0.45)
         gameOverTitle.position = CGPoint(x: size.width / 2, y: size.height * 0.65)
         gameOverPrompt.position = CGPoint(x: size.width / 2, y: size.height * 0.45)
+
+        scoreLabel.position = CGPoint(x: 20, y: size.height - 40)
     }
 
     private func setState(_ state: GameState) {
@@ -130,6 +169,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         splashPrompt.isHidden = state != .splash
         gameOverTitle.isHidden = state != .gameOver
         gameOverPrompt.isHidden = state != .gameOver
+        scoreLabel.isHidden = state == .splash
 
         if state == .splash {
             resetGameObjects()
@@ -145,11 +185,17 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         removeAllBricks()
         lastUpdateTime = 0
         lastBrickTime = 0
+        score = 0
+        updateScore()
 
         let paddleY = max(60, size.height * 0.12)
         paddle.position = CGPoint(x: size.width / 2, y: paddleY)
         ball.position = CGPoint(x: size.width / 2, y: paddleY + 60)
         ball.physicsBody?.velocity = .zero
+    }
+
+    private func updateScore() {
+        scoreLabel.text = "Score: \(score)"
     }
 
     private func startGameIfNeeded() {
@@ -164,8 +210,10 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func addBrickRow() {
+        let colors: [UIColor] = [.cyan, .magenta, .yellow, .green, .orange, .purple]
         for i in 0..<columns {
-            let brick = SKSpriteNode(color: .red, size: CGSize(width: brickWidth, height: brickHeight))
+            let color = colors.randomElement() ?? .red
+            let brick = SKSpriteNode(color: color, size: CGSize(width: brickWidth, height: brickHeight))
             brick.position = CGPoint(x: brickWidth * (CGFloat(i) + 0.5), y: size.height - brickHeight / 2)
             brick.zPosition = 1
             brick.physicsBody = SKPhysicsBody(rectangleOf: brick.size)
@@ -183,6 +231,46 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             brick.removeFromParent()
         }
         brickNodes.removeAll()
+    }
+
+    private func createExplosion(position: CGPoint, color: UIColor) {
+        let emitter = SKEmitterNode()
+        emitter.particleTexture = nil // Use square particles if no texture
+        emitter.particleSize = CGSize(width: 4, height: 4)
+        emitter.particleBirthRate = 100
+        emitter.numParticlesToEmit = 20
+        emitter.particleLifetime = 0.5
+        emitter.particlePositionRange = CGVector(dx: 10, dy: 10)
+        emitter.particleSpeed = 100
+        emitter.particleSpeedRange = 50
+        emitter.emissionAngleRange = .pi * 2
+        emitter.particleColor = color
+        emitter.particleColorBlendFactor = 1.0
+        emitter.particleAlpha = 1.0
+        emitter.particleAlphaSpeed = -2.0
+        emitter.position = position
+        addChild(emitter)
+
+        // Remove emitter after lifetime
+        let wait = SKAction.wait(forDuration: 1.0)
+        let remove = SKAction.removeFromParent()
+        emitter.run(SKAction.sequence([wait, remove]))
+    }
+
+    private func shakeCamera(duration: Float, amplitude: CGFloat) {
+        let numberOfShakes = duration / 0.04
+        var actionsArray: [SKAction] = []
+        for _ in 1...Int(numberOfShakes) {
+            let moveX = Float(arc4random_uniform(UInt32(amplitude))) - Float(amplitude) / 2
+            let moveY = Float(arc4random_uniform(UInt32(amplitude))) - Float(amplitude) / 2
+            let shakeAction = SKAction.moveBy(x: CGFloat(moveX), y: CGFloat(moveY), duration: 0.02)
+            shakeAction.timingMode = SKActionTimingMode.easeOut
+            actionsArray.append(shakeAction)
+            actionsArray.append(shakeAction.reversed())
+        }
+
+        let actionSeq = SKAction.sequence(actionsArray)
+        self.run(actionSeq)
     }
 
     private func clampPaddle(x: CGFloat) -> CGFloat {
@@ -269,15 +357,28 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
         if otherBody.categoryBitMask == PhysicsCategory.paddle {
             applyPaddleBounce()
+            impactGenerator.impactOccurred()
+            shakeCamera(duration: 0.1, amplitude: 5)
             return
         }
 
         if otherBody.categoryBitMask == PhysicsCategory.brick, let brickNode = otherBody.node as? SKSpriteNode {
+            // Particles
+            createExplosion(position: brickNode.position, color: brickNode.color)
+
             brickNode.removeFromParent()
             if let index = brickNodes.firstIndex(of: brickNode) {
                 brickNodes.remove(at: index)
             }
             applyBrickBounce(against: brickNode)
+
+            // Haptics & Shake
+            impactGenerator.impactOccurred()
+            shakeCamera(duration: 0.15, amplitude: 8)
+
+            // Score
+            score += 10
+            updateScore()
         }
     }
 
