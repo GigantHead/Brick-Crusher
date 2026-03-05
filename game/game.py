@@ -142,14 +142,24 @@ class Game:
     # draw splash screen for game start or game over    
     def draw_splash_screen(self):
         self.screen.fill(settings.BLACK)
-        title = self.font.render("Breakout", True, settings.NEON_BLUE)
+        title = self.font.render("Breakout", True, settings.WHITE)
+        controls_text = self.font.render("Use LEFT and RIGHT arrows to move", True, settings.GRAY)
         start_text = self.font.render("Press any key to start", True, settings.WHITE)
+        controls_text = self.font.render("Use Left/Right Arrows to move", True, settings.GRAY)
         
         title_rect = title.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 3))
+        controls_rect = controls_text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 2))
         start_rect = start_text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT * 2 // 3))
+        controls_rect = controls_text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT * 3 // 4))
         
+        # Add controls hint
+        hint_text = self.font.render("Use arrow keys to move", True, settings.GRAY)
+        hint_rect = hint_text.get_rect(center=(settings.SCREEN_WIDTH // 2, settings.SCREEN_HEIGHT // 2))
+
         self.screen.blit(title, title_rect)
+        self.screen.blit(controls_text, controls_rect)
         self.screen.blit(start_text, start_rect)
+        self.screen.blit(controls_text, controls_rect)
         pygame.display.flip()
 
     def draw_game_over_screen(self):
